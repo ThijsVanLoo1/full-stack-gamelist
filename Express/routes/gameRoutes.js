@@ -5,22 +5,70 @@ import Game from "../models/game.js";
 const router = Router();
 
 router.get("/", async (req, res) => {
-    const games = await Game.find({}, '-description');
+    const page = parseInt(req.query.page) || 1;
+    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+
+    let games;
+    let totalItems = await Game.countDocuments();
+    let totalPages = Math.ceil(totalItems / limit);
+
+    if (!limit) {
+        games = await Game.find({}, "-description");
+    } else {
+        const skip = (page - 1) * limit;
+
+        games = await Game.find({}, "-description")
+            .skip(skip)
+            .limit(limit);
+    }
+
+    const buildLink = (pageNumber) => ({
+        page: pageNumber,
+        href: `http://${process.env.BASE_URI}/?page=${pageNumber}&limit=${limit}`
+    });
 
     const collection = {
         items: games,
         _links: {
             self: {
-                href: `${process.env.BASE_URI}`,
+                href: `${process.env.BASE_URI}?page=${page}${limit ? `&limit=${limit}` : ""}`,
             },
             collection: {
                 href: `${process.env.BASE_URI}`,
             },
+        },
+        pagination: {
+            currentPage: page,
+            currentItems: limit,
+            totalPages: totalPages,
+            totalItems: totalItems,
+            _links: {
+                first: {
+                    page: 1,
+                    href: buildLink(1)
+                },
+                last: {
+                    page: totalPages,
+                    href: buildLink(totalPages)
+                },
+                previous: page > 1
+                    ? {
+                        page: page - 1,
+                        href: buildLink(page - 1)
+                    }
+                    : null,
+                next: page < totalPages
+                    ? {
+                        page: page + 1,
+                        href: buildLink(page + 1)
+                    }
+                    : null
+            }
         }
-    }
+    };
 
     res.json(collection);
-})
+});
 
 //POST overload
 router.post("/", async (req, res, next) => {
@@ -76,7 +124,6 @@ router.get("/:id", async (req, res) => {
             return res.status(404).json({ error: "Resource not found" });
         }
 
-
         res.json(game);
     } catch (e) {
         res.status(404).send();
@@ -109,7 +156,7 @@ router.put("/:id", async (req, res) => {
     }
 
     try {
-        const game = await game.findByIdAndUpdate(
+        const game = await Game.findByIdAndUpdate(
             req.params.id,
             { title, studio, description },
             { new: true, runValidators: true }
@@ -138,7 +185,5 @@ router.delete("/:id", async (req, res) => {
         res.status(400).json({ error: "Invalid ID" });
     }
 });
-
-
 
 export default router;
