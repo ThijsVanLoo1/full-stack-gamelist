@@ -80,8 +80,8 @@ router.post("/", async (req, res, next) => {
         const amount = req.body?.amount ?? 10;
         for (let i = 0; i < amount; i++) {
             const game = Game({
-                title: faker.lorem.words(),
-                description: faker.lorem.text(),
+                title: faker.commerce.productName(),
+                description: faker.lorem.paragraph(),
                 studio: faker.company.name()
             })
 

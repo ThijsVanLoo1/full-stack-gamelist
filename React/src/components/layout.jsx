@@ -3,11 +3,11 @@ import {Link, Outlet} from "react-router";
 function Layout() {
     return (
         <>
-            <header>
-                <nav className="flex justify-start gap-4 p-4">
-                    <Link to="/" className="bg-yellow-500 text-amber-50 rounded-xl px-4 py-2 text-xl hover:bg-amber-600 hover:ease-in-out duration-300">Home</Link>
-                    <Link to="/games" className="bg-yellow-500 text-amber-50 rounded-xl px-4 py-2 text-xl hover:bg-amber-600 hover:ease-in-out duration-300">Collection</Link>
-                    <Link to="/games/create" className="bg-yellow-500 text-amber-50 rounded-xl px-4 py-2 text-xl hover:bg-amber-600 hover:ease-in-out duration-300">Create</Link>
+            <header className="bg-zinc-950 shadow-lg">
+                <nav className="flex max-w-7xl items-center gap-4 p-4">
+                    <Link to="/" className="rounded-xl bg-zinc-900 px-5 py-2 text-lg font-medium text-zinc-200 shadow transition hover:-translate-y-0.5 hover:bg-zinc-800 hover:text-white">Home</Link>
+                    <Link to="/games" className="rounded-xl bg-zinc-900 px-5 py-2 text-lg font-medium text-zinc-200 shadow transition hover:-translate-y-0.5 hover:bg-zinc-800 hover:text-white">Collection</Link>
+                    <Link to="/games/create" className="rounded-xl bg-zinc-900 px-5 py-2 text-lg font-medium text-zinc-200 shadow transition hover:-translate-y-0.5 hover:bg-zinc-800 hover:text-white">Create</Link>
                 </nav>
             </header>
             <main>
@@ -24,7 +24,6 @@ function Layout() {
                             Made with love
                         </p>
                     </div>
-
                     <div>
                         <ul className="flex space-x-6 text-sm">
                             <li><a href="#" className="hover:text-white transition">Home</a></li>
@@ -33,7 +32,6 @@ function Layout() {
                         </ul>
                     </div>
                 </div>
-
                 <div className="border-t border-gray-800 py-2 text-center text-xs text-gray-500">
                     © 2026 Fullstack-Gamelist.
                 </div>
