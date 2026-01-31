@@ -5,72 +5,81 @@ import Game from "../models/game.js";
 const router = Router();
 
 router.get("/", async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    //PAGINATION
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10);
+
+    //MORE PAGINATION
+    const totalItems = await Game.countDocuments();
+    const hasLimit = Number.isInteger(limit) && limit > 0;
 
     let games;
-    let totalItems = await Game.countDocuments();
-    let totalPages = Math.ceil(totalItems / limit);
+    let currentPage = 1;
+    let totalPages = 1;
+    let currentItems = totalItems;
+    let safeLimit = totalItems;
 
-    if (!limit) {
+    if (!hasLimit) {
+        // ZONDER limit → alles tonen
         games = await Game.find({}, "-description");
     } else {
-        const skip = (page - 1) * limit;
+        safeLimit = limit;
+        totalPages = Math.ceil(totalItems / safeLimit);
+
+        currentPage = Math.min(
+            Math.max(page, 1),
+            totalPages
+        );
+
+        const skip = (currentPage - 1) * safeLimit;
 
         games = await Game.find({}, "-description")
             .skip(skip)
-            .limit(limit);
+            .limit(safeLimit);
+
+        currentItems = games.length;
     }
 
-    const buildLink = (pageNumber) => ({
-        page: pageNumber,
-        href: `http://${process.env.BASE_URI}/?page=${pageNumber}&limit=${limit}`
-    });
+    const buildLink = (pageNumber) =>
+        `${process.env.BASE_URI}?page=${pageNumber}&limit=${safeLimit}`;
 
     const collection = {
         items: games,
+
         _links: {
             self: {
-                href: `${process.env.BASE_URI}?page=${page}${limit ? `&limit=${limit}` : ""}`,
+                href: hasLimit
+                    ? `${process.env.BASE_URI}?page=${currentPage}&limit=${safeLimit}`
+                    : `${process.env.BASE_URI}`,
             },
             collection: {
                 href: `${process.env.BASE_URI}`,
             },
         },
+
         pagination: {
-            currentPage: page,
-            currentItems: limit,
-            totalPages: totalPages,
-            totalItems: totalItems,
+            currentPage,
+            currentItems,
+            totalPages,
+            totalItems,
+
             _links: {
-                first: {
-                    page: 1,
-                    href: buildLink(1)
+                first: { page: 1,
+                    href: hasLimit ? buildLink(1) : `${process.env.BASE_URI}`
                 },
-                last: {
-                    page: totalPages,
-                    href: buildLink(totalPages)
+                last:  { page: hasLimit ? totalPages : 1,
+                    href: hasLimit ? buildLink(totalPages) : `${process.env.BASE_URI}`
                 },
-                previous: page > 1
-                    ? {
-                        page: page - 1,
-                        href: buildLink(page - 1)
-                    }
-                    : null,
-                next: page < totalPages
-                    ? {
-                        page: page + 1,
-                        href: buildLink(page + 1)
-                    }
-                    : null
+                previous: hasLimit && currentPage > 1 ? { page: currentPage - 1, href: buildLink(currentPage - 1) } : null,
+                next:     hasLimit && currentPage < totalPages ? { page: currentPage + 1, href: buildLink(currentPage + 1) } : null
             }
-        }
+        },
     };
 
     res.json(collection);
 });
 
-//POST overload
+//POST OVERLOAD
 router.post("/", async (req, res, next) => {
     if(req.body?.method && req.body?.method === "SEED") {
 
@@ -95,6 +104,7 @@ router.post("/", async (req, res, next) => {
     }
 })
 
+//REGULAR POST
 router.post("/", (req, res) => {
     if(req.body?.description && req.body?.title && req.body?.studio) {
         const game = Game({
@@ -114,6 +124,7 @@ router.post("/", (req, res) => {
     }
 })
 
+//GET DETAILS
 router.get("/:id", async (req, res) => {
     const gameId = req.params.id;
 
@@ -148,6 +159,7 @@ router.options("/:id", (req, res, next) => {
     res.status(204).send();
 });
 
+//EDIT DETAILS
 router.put("/:id", async (req, res) => {
     const { title, studio, description } = req.body;
 
@@ -172,6 +184,7 @@ router.put("/:id", async (req, res) => {
     }
 });
 
+//DELETE DETAILS
 router.delete("/:id", async (req, res) => {
     try {
         const game = await Game.findByIdAndDelete(req.params.id);
